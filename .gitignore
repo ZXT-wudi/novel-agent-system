@@ -1,0 +1,33 @@
+# ===== 敏感信息：环境变量与 API 密钥 =====
+.env
+.env.*
+!.env.example
+
+# ===== 数据库文件 =====
+*.db
+*.sqlite
+*.sqlite3
+chroma_data/
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# ===== IDE =====
+.idea/
+.vscode/
+
+# ===== 运行时生成的数据 =====
+static/character_images/
+static/novel_images/
+
+# ===== 日志 =====
+*.log
+
+# ===== 个人文件 =====
+简历-项目经历-AI多智能体小说创作系统.md

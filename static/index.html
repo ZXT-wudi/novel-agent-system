@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI小说写作系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">AI小说工坊</div>
+        <div class="nav-center">
+            <select id="novel-select" class="novel-select"><option value="">选择小说...</option></select>
+            <button class="btn btn-primary btn-sm" onclick="startNovelWizard()">+ 新建小说</button>
+            <button id="btn-delete-novel" class="btn btn-danger btn-sm" style="display:none;" onclick="deleteNovel()">删除当前小说</button>
+        </div>
+        <div class="nav-right">
+            <span class="active-model-indicator" id="active-model-indicator" style="font-size:13px;color:var(--text-secondary);">模型: 未配置</span>
+        </div>
+    </nav>
+
+    <main class="main-container">
+        <aside class="activity-bar">
+            <button class="activity-item active" data-view="writing" title="写作台" onclick="switchView('writing')">✍️</button>
+            <button class="activity-item" data-view="outlines" title="大纲" onclick="switchView('outlines')">📋</button>
+            <button class="activity-item" data-view="knowledge" title="知识库" onclick="switchView('knowledge')">📚</button>
+            <button class="activity-item" data-view="settings" title="设置" onclick="switchView('settings')">⚙️</button>
+        </aside>
+
+        <section class="view active" id="view-writing">
+            <div class="view-toolbar">
+                <select id="chapter-select" class="chapter-select"><option value="">选择章节...</option></select>
+                <div class="control-status" id="writing-status"><span class="status-dot"></span><span id="status-text">空闲</span></div>
+                <div class="control-buttons">
+                <button class="btn btn-primary" onclick="startWriting()" id="btn-start-writing">开始写下一章</button>
+                <button class="btn btn-outline" onclick="generateNextBatch()" id="btn-next-batch" style="display:none;">继续生成后续章节</button>
+                <button class="btn btn-outline" onclick="saveCurrentChapter()" id="btn-save-chapter" disabled>保存章节</button>
+                <button class="btn btn-sm btn-outline" id="btn-save-draft" onclick="saveDraft()" style="display:none;">保存草稿</button>
+                <div class="chapter-header" id="chapter-header" style="display:none;">
+                    <span id="chapter-title-display" class="chapter-title-inline">第1章</span>
+                    <div class="chapter-meta">
+                        <span id="chapter-status-badge" class="badge">草稿</span>
+                        <span id="chapter-version">v1</span>
+                        <button class="btn btn-sm btn-outline" onclick="toggleEditMode()" id="btn-edit">编辑</button>
+                        <button class="btn btn-sm btn-warning" onclick="showRewriteModal()" id="btn-rewrite">AI重写</button>
+                    </div>
+                </div>
+            </div>
+            <div class="chapter-progress" id="chapter-progress" style="display:none;">
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+                <span class="progress-text" id="progress-text">0%</span>
+            </div>
+        </div>
+        <div class="content-area" style="flex:1;overflow:auto;display:flex;flex-direction:column;">
+                <div class="chapter-content" id="chapter-content" style="flex:1;overflow:auto;">
+                    <div id="polish-compare-mount" style="display:none;"></div>
+                    <div class="welcome-screen" id="welcome-screen">
+                        <h1>欢迎使用AI小说工坊</h1>
+                        <p>创建一部新小说，开始你的AI协作写作之旅</p>
+                        <div class="welcome-steps">
+                            <div class="step"><div class="step-number">1</div><div class="step-text">创建小说</div></div>
+                            <div class="step-arrow">→</div>
+                            <div class="step"><div class="step-number">2</div><div class="step-text">生成全文大纲</div></div>
+                            <div class="step-arrow">→</div>
+                            <div class="step"><div class="step-number">3</div><div class="step-text">生成章节大纲</div></div>
+                            <div class="step-arrow">→</div>
+                            <div class="step"><div class="step-number">4</div><div class="step-text">确认大纲</div></div>
+                            <div class="step-arrow">→</div>
+                            <div class="step"><div class="step-number">5</div><div class="step-text">开始写作</div></div>
+                        </div>
+                    </div>
+                    <div class="chapter-text" id="chapter-text" style="display:none;"></div>
+                    <textarea class="chapter-editor" id="chapter-editor" style="display:none;"></textarea>
+                    <div class="manual-editor" id="manual-editor" contenteditable="true" style="display:none;"></div>
+                </div>
+                <div class="review-panel" id="review-panel" style="display:none;">
+                    <div class="review-header">
+                        <h3>审查意见</h3>
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div class="review-summary" id="review-summary"></div>
+                            <button class="btn btn-sm btn-outline" onclick="hideReviewPanel()" title="关闭审查面板">✕ 关闭</button>
+                        </div>
+                    </div>
+                    <div class="review-body" id="review-body"></div>
+                    <div class="review-actions" id="review-actions" style="display:none;">
+                        <button class="btn btn-primary" onclick="submitDecisions()">提交决策</button>
+                        <button class="btn btn-success" onclick="acceptAllSuggestions()">全部采纳</button>
+                        <button class="btn btn-outline" onclick="rejectAllSuggestions()">全部拒绝</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="view" id="view-outlines" style="flex-direction:column;overflow:auto;padding:20px;gap:20px;">
+            <div class="panel full-outline-panel" id="full-outline-panel">
+                <div class="panel-header">
+                    <h3>全文大纲</h3>
+                    <div class="panel-actions">
+                        <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-secondary);" title="目标字数（≥500000为长篇，否则短篇）。可手动修改后重新生成">
+                            目标字数
+                            <input type="number" id="full-outline-target-word-count" min="0" step="10000" value="0" style="width:90px;font-size:12px;padding:2px 4px;" placeholder="如: 800000">
+                            <span id="full-outline-length-tag" style="font-size:11px;padding:1px 6px;border-radius:8px;background:var(--bg-tertiary);">短篇</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;color:var(--text-secondary);" title="生成前先联网搜索真实资料/同类作品/文化背景作为参考（需在 .env 配置 TAVILY_API_KEY）">
+                            <input type="checkbox" id="use-web-research-full"> 联网取材
+                        </label>
+                        <button class="btn btn-sm btn-outline" onclick="generateFullOutline()" id="btn-gen-full-outline">AI生成</button>
+                        <button class="btn btn-sm btn-outline" onclick="aiReviseFullOutline()" id="btn-revise-full-outline">AI修改</button>
+                        <button class="btn btn-sm btn-success" onclick="confirmFullOutline()" id="btn-confirm-full-outline" style="display:none;">确认大纲</button>
+                        <button class="btn btn-sm btn-outline" onclick="openFullOutlineFullscreen()" id="btn-expand-full-outline" title="展开查看/编辑">⤢ 展开查看</button>
+                    </div>
+                </div>
+                <div class="panel-body" id="full-outline-container"><div class="outline-empty">请先选择小说，然后生成全文大纲</div></div>
+            </div>
+            <div class="panel outline-panel">
+                <div class="panel-header">
+                    <h3>章节大纲</h3>
+                    <div class="panel-actions">
+                        <button class="btn btn-sm btn-outline" onclick="generateChapterOutline()" id="btn-gen-chapter-outline">生成章节大纲</button>
+                        <button class="btn btn-sm btn-outline" onclick="aiReviseOutline()" id="btn-revise-outline">AI修改</button>
+                        <button class="btn btn-sm btn-success" onclick="confirmOutline()" id="btn-confirm-outline">确认大纲</button>
+                        <button class="btn btn-sm btn-outline" onclick="openOutlineFullscreen()" id="btn-expand-outline" title="展开查看/编辑">⤢ 展开查看</button>
+                    </div>
+                </div>
+                <div class="panel-body" id="outline-container"><div class="outline-empty">请先创建小说并生成大纲</div></div>
+            </div>
+        </section>
+
+        <section class="view" id="view-knowledge" style="flex-direction:column;overflow:auto;padding:20px;gap:20px;">
+            <div class="panel rag-panel">
+                <div class="panel-header">
+                    <h3>知识库</h3>
+                    <div class="panel-actions">
+                        <button class="btn btn-sm btn-outline" onclick="showAddKnowledgeModal()">+ 手动</button>
+                        <button class="btn btn-sm btn-primary" onclick="showImportDocumentModal()">导入文档</button>
+                        <button class="btn btn-sm btn-outline" onclick="openKnowledgeBaseManager()">高级知识库</button>
+                        <button class="btn btn-sm btn-outline" onclick="openOrdinaryKBManager()">普通知识库</button>
+                        <button class="btn btn-sm btn-warning" onclick="openKnowledgeGraph()">知识图谱</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="rag-tabs">
+                        <button class="rag-tab active" onclick="switchRagTab('preferences')">偏好</button>
+                        <button class="rag-tab" onclick="switchRagTab('knowledge')">世界观</button>
+                    </div>
+                    <div id="rag-content" class="rag-content"><div class="rag-empty">暂无数据</div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="view" id="view-settings" style="flex-direction:column;overflow:auto;padding:20px;">
+            <div class="panel">
+                <div class="panel-header"><h3>大模型供应商管理</h3></div>
+                <div class="panel-body" id="settings-providers-container"><div class="outline-empty">加载中...</div></div>
+            </div>
+            <div class="panel" style="margin-top:16px;">
+                <div class="panel-header"><h3>小说知识库绑定</h3></div>
+                <div class="panel-body" id="settings-novel-kb-container"><div class="outline-empty">请先在左侧选择一部小说</div></div>
+            </div>
+        </section>
+    </main>
+
+    <div id="full-outline-fullscreen" class="outline-fullscreen" style="display:none;"></div>
+    <div id="outline-fullscreen" class="outline-fullscreen" style="display:none;"></div>
+    <div class="modal-overlay" id="modal-overlay" style="display:none;"><div class="modal" id="modal-content"></div></div>
+
+    <footer class="status-bar"><span id="status-bar-text">就绪</span><span id="status-bar-detail"></span></footer>
+
+    <script src="/static/js/sse.js?v=20260817"></script>
+    <script src="/static/js/outline.js?v=20260825a"></script>
+    <script src="/static/js/chapter.js?v=20260825b"></script>
+    <script src="/static/js/review.js?v=20260825b"></script>
+    <script src="/static/js/knowledge-graph.js?v=20260818b"></script>
+    <script src="/static/js/knowledge-base.js?v=20260817"></script>
+    <script src="/static/js/ordinary-knowledge-base.js?v=20260905a"></script>
+    <script src="/static/js/app.js?v=20260905a"></script>
+    <script src="/static/js/novel-wizard.js?v=20260817"></script>
+    <script src="/static/js/settings.js?v=20260905a"></script>
+</body>
+</html>

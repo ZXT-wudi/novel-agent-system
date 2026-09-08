@@ -1,0 +1,25 @@
+# Checklist
+
+- [x] `static/index.html` 已引入 Noto Serif SC + Noto Sans SC 字体（含中文回退栈）
+- [x] `static/css/style.css` `:root` 含 `--font-serif`/`--font-sans`、`--ink`/`--ink-soft`/`--ink-muted`、`--seal`/`--seal-hover`、`--rule`、`--shadow`/`--shadow-lift`，且保留纸张色
+- [x] `body::before` 纸张纹理已就位（细微噪点、低不透明度、fixed、不挡交互）
+- [x] 品牌与视图标题使用衬线 + 朱砂下划线细线
+- [x] 活动栏激活态为朱砂左条 + 纸张凸起底
+- [x] 章节头为杂志卡（衬线"第N章" + 元信息行 + 发丝细线 + 柔阴影）
+- [x] 章节正文阅读宽度 ~720px、行高 1.85、段首缩进 2em
+- [x] 首段首字下沉（`::first-letter` 朱砂衬线大字）
+- [x] 按钮/面板/卡片/徽章/引用/分隔符均按编辑风精修
+- [x] 审查卡片为编辑风（衬线读者类型 + 朱砂采纳强调）
+- [x] grep 确认全站无 `#1a1a2e`/`#16213e`/`#6c63ff`/`#5a52d5` 等冷蓝黑 hex
+- [x] `app/agents/readers/polish_reader.py` 已创建，含 `POLISH_READER_PROMPT`（用户完整 Profile + 输出约束）
+- [x] `polish_chapter(state)` 返回 `{"reader_type":"polish","polished_draft":<全文>}`
+- [x] prompt 含核心信息保真/去AI化/语言规范/语气适配约束
+- [x] `app/agents/state.py` 新增 `polished_draft: Optional[str] = None`
+- [x] `graph.py` `review_parallel` 以 `polish_chapter` 替换 `review_plot`，按 `reader_type` 分流
+- [x] `chapter_service.py` 流式流程 `review_plot` 块替换为 `polish_chapter` 块，状态文案改为润色师
+- [x] `all_comments` 聚合跳过 polish 结果
+- [x] `_state_to_response` 暴露 `polished_draft`
+- [x] `review.js` `showReviewPanel` 渲染原文/润色文双栏对比 + 一键采纳/暂不采纳
+- [x] `acceptPolish()` 客户端替换正文并启用保存
+- [x] `dismissPolish()` 隐藏润色卡且不影响评论流程
+- [x] `getReaderTypeName` 已移除 `plot` 映射

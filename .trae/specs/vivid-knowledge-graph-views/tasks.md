@@ -1,0 +1,50 @@
+# Tasks
+
+- [x] Task 1: 图像模型可配置
+  - [x] 1.1 `app/llm/siliconflow.py`：`generate_image` 的 `model` 改为 `os.getenv("IMAGE_MODEL", "Tongyi-MAI/Z-Image-Turbo")`
+  - [x] 1.2 `.env` / `.env.example`（如存在）补充 `IMAGE_MODEL` 注释项（均不存在，跳过）
+- [x] Task 2: NovelImage 模型与存储目录
+  - [x] 2.1 新增 `app/models/novel_image.py`：`novel_images` 表（novel_id, image_type, image_key, image_path, prompt, created_at），唯一约束 `(novel_id, image_type, image_key)`，字段风格对齐 `CharacterImage`
+  - [x] 2.2 `app/models/__init__.py` 导出注册（依赖启动时 `create_all` 自动建表）
+  - [x] 2.3 `image_service.py` 新增 `NOVEL_IMAGE_DIR = static/novel_images/`，初始化目录（复用现有目录初始化模式）
+- [x] Task 3: image_service 世界地图与区域插画
+  - [x] 3.1 `generate_and_save_world_map(db, novel_id, force=False)`：查小说（title/genre/full_outline 节选）+ world 类 StoryKnowledge 元素构造中文提示词，调 `generate_image(image_size="1344x768")`，落盘 `static/novel_images/world_map_{novel_id}.png`，upsert `NovelImage(image_type="world_map", image_key="")`；命中缓存且非 force 直接返回
+  - [x] 3.2 `generate_and_save_region_image(db, novel_id, region_name, description="", force=False)`：提示词含区域名 + 描述 + 关联角色 + 题材，`1024x1024`，文件名 `region_{novel_id}_{hash}.png`，upsert `(image_type="region", image_key=region_name)`
+  - [x] 3.3 `get_novel_image_maps(db, novel_id)`：返回 `{"world_map": url|None, "regions": {名: url}}`，URL 拼 `/static/novel_images/...`
+- [x] Task 4: build_graph_data 附带图像信息
+  - [x] 4.1 `knowledge_extractor.py` `build_graph_data`：查询 NovelImage 组装 `images` 字段；查询 CharacterImage 按 `character_name` 取最新一条组装 `character_images` 字段；响应其余字段不动
+- [x] Task 5: knowledge.py 新端点
+  - [x] 5.1 POST `/{novel_id}/knowledge/world-image`（body `{force?}`），调 3.1，返回 `{"image_url": ...}`；异常返回 500 + 中文错误信息
+  - [x] 5.2 POST `/{novel_id}/knowledge/region-image`（body `{region_name, description?, force?}`），region_name 缺失 422；调 3.2，返回 `{"image_url": ...}`
+- [x] Task 6: 关系网络渲染升级（`static/js/knowledge-graph.js` renderGraph）
+  - [x] 6.1 头像节点：`<defs>` 内为有立绘的角色生成 clipPath，节点组渲染 `<image>` 圆形头像；无立绘保持现有 circle + 首字
+  - [x] 6.2 连线：角色关系（type=relation）改二次贝塞尔曲线路径 + `marker-end` 箭头（箭头颜色随类型），标签取曲线中点；appears_in/related 保持直线弱化样式
+  - [x] 6.3 图例筛选：图例项点击切换类型显隐（links + labels 同步）
+  - [x] 6.4 章节节点开关：默认隐藏章节节点及其 appears_in 连线，工具区加开关；隐藏后过滤孤立节点
+  - [x] 6.5 详情面板：角色详情有立绘时顶部展示头像大图
+- [x] Task 7: 世界地图双模式（renderWorldMap）
+  - [x] 7.1 模式切换按钮组（插画/示意），会话内存记忆；`data.images.world_map` 存在则默认插画模式
+  - [x] 7.2 插画模式：`<img>` 背景 + SVG 透明热区（悬停描边、点击详情）；无插画显示引导卡片（说明文案 + 生成按钮 + loading + 失败重试）
+  - [x] 7.3 生成调用 POST world-image，成功后更新 `data.images.world_map` 并重渲染插画模式
+  - [x] 7.4 示意模式：区域改有机大陆形状（不规则弧形 blob path，按 category 配色 + 分类角标emoji），区域间连线改为共享角色真实连线（线宽随共享人数），去掉随机连线与多余 core 假节点
+- [x] Task 8: 区域详情插画区
+  - [x] 8.1 showRegionDetail 面板底部加插画区块：有 `data.images.regions[名]` 直接展示；否则「生成区域插画」按钮（loading/失败态），调 POST region-image，成功更新 data 并刷新
+- [x] Task 9: 样式与收尾
+  - [x] 9.1 `static/css/style.css`：模式切换按钮、生成引导卡、插画区、头像详情、图例熄灭态等样式
+  - [x] 9.2 `static/index.html`：knowledge-graph.js 版本号递增（?v=20260818）
+- [x] Task 10: 验证
+  - [x] 10.1 `py_compile` 全部改动 py 文件通过
+  - [x] 10.2 `node --check` knowledge-graph.js 通过
+  - [x] 10.3 手动走查清单：图谱三视图加载无报错、无插画时默认示意模式、生成按钮 loading 态、筛选与章节开关生效
+- [x] Task 11: 验证失败项修复
+  - [x] 11.1 `app/llm/siliconflow.py` 头部补 `import os`（当前 generate_image 引用 os.getenv 但未导入，运行时 NameError，阻塞所有图像生成）
+  - [x] 11.2 `static/js/knowledge-graph.js` renderGraph 无立绘分支：首字渲染进圆内（text-anchor middle、dominant-baseline central、加粗、字号16px+），名字标签保留在圆下方
+  - [x] 11.3 `static/js/knowledge-graph.js` renderWorldMap 示意模式连线：改为「共享角色」两跳推导（由 type=="related" 的 角色↔世界元素 连线聚合出每个区域的关联角色集合，两区域集合有交集才画线，线宽随交集人数 1.5~4px），替换当前恒为空的 world-world 直连统计
+
+# Task Dependencies
+- Task 2 -> Task 3（service 依赖模型与目录）
+- Task 3 -> Task 5（端点依赖 service）
+- Task 3、Task 4 -> Task 6/7/8（前端依赖新数据字段；Task 6 依赖 4.1 的 character_images）
+- Task 6、7、8 -> Task 9（样式收尾）
+- Task 9 -> Task 10（验证最后）
+- 可并行：Task 1 独立；Task 6 与 Task 7/8 在后端就绪后可并行

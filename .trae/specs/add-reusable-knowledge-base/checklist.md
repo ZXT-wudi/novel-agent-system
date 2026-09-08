@@ -1,0 +1,26 @@
+# Checklist
+
+- [x] KnowledgeBase 模型含 name/genre/source_work/is_fanwork/description
+- [x] KnowledgeEntry 模型含 kb_id/category/title/content/attributes/source
+- [x] Novel 模型新增 knowledge_base_id（可空外键）且现有数据迁移不丢
+- [x] 新表由 init_db 的 create_all 自动创建
+- [x] retriever 提供 KB 版 add/query，collection 命名为 kb_{id}，与 per-novel 隔离
+- [x] 知识库 CRUD 端点齐全（增删改查 + 条目增删改查）
+- [x] 删除知识库时同步删除其 chroma collection 与条目
+- [x] 文件上传提取后写入指定 KB（source=upload）并入向量库
+- [x] AI 联网批量写入端点写入指定 KB（source=ai_search）并入向量库
+- [ ] AI 整理内容覆盖原作完整设定（世界观/角色/事件/时间线/势力/设定），不止用户提及
+- [x] 手动添加单条知识（source=manual）
+- [x] 小说创建问答新增题材问题（标题之后）
+- [x] 选"同人"追问原作名并进入知识库准备环节
+- [x] 同人未关联知识库时确认按钮禁用并提示
+- [x] from-qa 端点接收 genre 与 knowledge_base_id 并持久化
+- [x] 大纲 Agent 上下文注入关联 KB 检索结果
+- [x] 写作 Agent _build_writing_context 注入关联 KB 检索结果
+- [x] 同人小说生成全文大纲前校验已关联知识库（否则 400）
+- [x] 知识库列表页卡片展示（名称/题材/原作/条目数）
+- [x] 知识库详情页按分类分区浏览（世界观/角色/事件/时间线/势力/设定）
+- [x] 详情页支持编辑/删除/手动添加/上传文件/批量写入
+- [x] 样式与现有深色主题一致
+- [x] 独立 KB 与 per-novel world_knowledge 并存且互不干扰
+- [x] 服务器正常启动，建知识库->同人小说关联->大纲注入->章节注入->可视化全流程端到端通过
