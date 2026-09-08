@@ -21,6 +21,7 @@ venv/
 # ===== IDE =====
 .idea/
 .vscode/
+.trae/
 
 # ===== 运行时生成的数据 =====
 static/character_images/
